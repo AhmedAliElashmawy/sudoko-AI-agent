@@ -8,7 +8,7 @@ def ac3(csp):
     """
     queue = deque()
     
-    # Initialize queue with all arcs in the CSP [cite: 48]
+    # Initialize queue with all arcs in the CSP
     for xi in csp.variables:
         for xj in csp.neighbors[xi]:
             queue.append((xi, xj))
@@ -20,7 +20,7 @@ def ac3(csp):
             if len(csp.domains[xi]) == 0:
                 return False  # Inconsistency found
             
-            # Add neighbors of Xi (excluding Xj) to queue [cite: 58]
+            # Add neighbors of Xi (excluding Xj) to queue
             for xk in csp.neighbors[xi]:
                 if xk != xj:
                     queue.append((xk, xi))
