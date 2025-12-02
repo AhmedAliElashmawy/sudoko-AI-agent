@@ -145,8 +145,8 @@ class BoardWidget(QWidget):
     def set_editable(self, editable):
         """Enable or disable editing of non-given cells."""
         for cell in self.cells.values():
-            if not cell.is_given:
-                cell.setReadOnly(not editable)
+            # if not cell.is_given:
+            cell.setReadOnly(not editable)
     
     def is_complete(self):
         """Check if all cells are filled."""

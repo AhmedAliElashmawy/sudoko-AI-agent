@@ -7,6 +7,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'logic'))
 from generator import SudokuGenerator
+from solver import SudokuSolver
 
 from board_widget import BoardWidget
 from controls import ControlsWidget
@@ -40,6 +41,7 @@ class SudokuMainWindow(QMainWindow):
         self.controls_widget.solve_clicked.connect(self.solve_board)
         self.controls_widget.reset_clicked.connect(self.reset_board)
         self.controls_widget.check_clicked.connect(self.check_solution)
+        self.controls_widget.clear_clicked.connect(self.clear_board)
         self.controls_widget.mode_changed.connect(self.on_mode_changed)
         self.controls_widget.difficulty_changed.connect(self.on_difficulty_changed)
         main_layout.addWidget(self.controls_widget, stretch=1)
@@ -50,7 +52,6 @@ class SudokuMainWindow(QMainWindow):
     def generate_board(self):
         """Generate a new Sudoku puzzle."""
         try:
-            
             puzzle, board_solution, success, method = self.sudoku_generator.generate(self.controls_widget.get_difficulty())
             self.board_widget.set_board(puzzle, save_original=True)
             
@@ -74,7 +75,17 @@ class SudokuMainWindow(QMainWindow):
     def solve_board(self):
         """Solve the current puzzle."""
         try:
-            if self.success:
+            if self.controls_widget.get_mode() == "Custom Board":
+                puzzel = self.board_widget.get_board()
+                self.board_widget.set_board(puzzel, save_original=True)
+                solver = SudokuSolver(puzzel)
+                self.success, self.solution, self.method = solver.solve()
+                if self.success:
+                    self.board_widget.set_board(self.solution, save_original=False)
+                    QMessageBox.information(self, "Success", f"The AI has solved the puzzle!\nMethod: {self.method}")
+                else:
+                    QMessageBox.warning(self, "No Solution", "The AI couldn't find a solution for this puzzle.")
+            elif self.success:
                 self.board_widget.set_board(self.solution, save_original=False)
                 QMessageBox.information(self, "Success", f"The AI has solved the puzzle!\nMethod: {self.method}")
             else:
@@ -86,6 +97,9 @@ class SudokuMainWindow(QMainWindow):
     def reset_board(self):
         """Reset the board to the original puzzle."""
         self.board_widget.reset_to_original()
+
+    def clear_board(self):
+        self.board_widget.clear_board()
     
     def check_solution(self):
         """Check if the player's solution is correct."""
@@ -135,7 +149,7 @@ class SudokuMainWindow(QMainWindow):
     
     def on_mode_changed(self, mode):
         """Handle mode changes."""
-        if mode == "Player":
+        if mode == "Player" or mode == "Custom Board":
             self.board_widget.set_editable(True)
         else:
             self.board_widget.set_editable(False)

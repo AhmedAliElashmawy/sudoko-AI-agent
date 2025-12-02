@@ -11,6 +11,7 @@ class ControlsWidget(QWidget):
     solve_clicked = pyqtSignal()
     reset_clicked = pyqtSignal()
     check_clicked = pyqtSignal()
+    clear_clicked = pyqtSignal()
     mode_changed = pyqtSignal(str)
     difficulty_changed = pyqtSignal(str)
     
@@ -38,7 +39,7 @@ class ControlsWidget(QWidget):
         mode_layout.addWidget(mode_label)
         
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["Player", "AI Solver"])
+        self.mode_combo.addItems(["Player", "AI Solver", "Custom Board"])
         self.mode_combo.setFont(QFont("Arial", 11))
         self.mode_combo.currentTextChanged.connect(self.on_mode_changed)
         mode_layout.addWidget(self.mode_combo)
@@ -47,21 +48,21 @@ class ControlsWidget(QWidget):
         main_layout.addWidget(mode_group)
         
         # Difficulity selection
-        difficulty_group = QGroupBox()
-        difficulty_layout = QVBoxLayout()
+        self.difficulty_group = QGroupBox()
+        self.difficulty_layout = QVBoxLayout()
         
         difficulty_label = QLabel("Select Difficulty:")
         difficulty_label.setFont(QFont("Arial", 12))
-        difficulty_layout.addWidget(difficulty_label)
+        self.difficulty_layout.addWidget(difficulty_label)
         
         self.difficulty_combo = QComboBox()
         self.difficulty_combo.addItems(["Easy", "Medium", "Hard"])
         self.difficulty_combo.setFont(QFont("Arial", 11))
         self.difficulty_combo.currentTextChanged.connect(self.difficulty_changed.emit)
-        difficulty_layout.addWidget(self.difficulty_combo)
+        self.difficulty_layout.addWidget(self.difficulty_combo)
         
-        difficulty_group.setLayout(difficulty_layout)
-        main_layout.addWidget(difficulty_group)
+        self.difficulty_group.setLayout(self.difficulty_layout)
+        main_layout.addWidget(self.difficulty_group)
 
         # Action buttons
         buttons_group = QGroupBox()
@@ -162,7 +163,28 @@ class ControlsWidget(QWidget):
         """)
         self.reset_btn.clicked.connect(self.reset_clicked.emit)
         buttons_layout.addWidget(self.reset_btn)
-        
+
+        self.clear_btn = QPushButton("Clear Board")
+        self.clear_btn.setFont(QFont("Arial", 11))
+        self.clear_btn.setMinimumHeight(40)
+        self.reset_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #f44336;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 10px;
+            }
+            QPushButton:hover {
+                background-color: #da190b;
+            }
+            QPushButton:pressed {
+                background-color: #c41609;
+            }
+        """)
+        self.clear_btn.clicked.connect(self.clear_clicked.emit)
+        buttons_layout.addWidget(self.clear_btn)
+
         buttons_group.setLayout(buttons_layout)
         main_layout.addWidget(buttons_group)
         
@@ -176,10 +198,18 @@ class ControlsWidget(QWidget):
         if mode == "AI Solver":
             self.solve_btn.setVisible(True)
             self.check_btn.setVisible(False)
+            self.difficulty_group.setVisible(True)
+            self.generate_btn.setVisible(True)
+        elif mode == "Custom Board":
+            self.solve_btn.setVisible(True)
+            self.check_btn.setVisible(False)
+            self.difficulty_group.setVisible(False)
+            self.generate_btn.setVisible(False)
         else:
             self.solve_btn.setVisible(False)
             self.check_btn.setVisible(True)
-        
+            self.difficulty_group.setVisible(True)
+            self.generate_btn.setVisible(True)
         self.mode_changed.emit(mode)
     
     def get_mode(self):
