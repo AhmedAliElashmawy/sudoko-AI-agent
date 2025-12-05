@@ -68,6 +68,47 @@ class SudokuCell(QLineEdit):
         self.is_given = is_given
         self.setup_ui()
     
+    def highlight_error(self, is_error=True):
+        """Highlight the cell in red if it contains an error."""
+        top_border = "2px solid #000" if self.row % 3 == 0 else "1px solid #999"
+        left_border = "2px solid #000" if self.col % 3 == 0 else "1px solid #999"
+        bottom_border = "2px solid #000" if self.row == 8 or (self.row + 1) % 3 == 0 else "1px solid #999"
+        right_border = "2px solid #000" if self.col == 8 or (self.col + 1) % 3 == 0 else "1px solid #999"
+        
+        if self.is_given:
+            # Given cells don't change
+            return
+        
+        if is_error:
+            self.setStyleSheet(f"""
+                QLineEdit {{
+                    background-color: #ffcccc;
+                    color: #cc0000;
+                    border-top: {top_border};
+                    border-left: {left_border};
+                    border-bottom: {bottom_border};
+                    border-right: {right_border};
+                    font-weight: bold;
+                }}
+                QLineEdit:focus {{
+                    background-color: #ffb3b3;
+                }}
+            """)
+        else:
+            self.setStyleSheet(f"""
+                QLineEdit {{
+                    background-color: white;
+                    color: #0066cc;
+                    border-top: {top_border};
+                    border-left: {left_border};
+                    border-bottom: {bottom_border};
+                    border-right: {right_border};
+                }}
+                QLineEdit:focus {{
+                    background-color: #e3f2fd;
+                }}
+            """)
+    
     def get_value(self):
         """Get the numeric value of the cell."""
         text = self.text().strip()
@@ -85,6 +126,7 @@ class BoardWidget(QWidget):
         super().__init__()
         self.cells = {}
         self.original_board = None
+        self.validation_enabled = False
         self.setup_ui()
     
     def setup_ui(self):
@@ -111,6 +153,8 @@ class BoardWidget(QWidget):
     
     def on_cell_changed(self):
         """Emit signal when any cell changes."""
+        if self.validation_enabled:
+            self.validate_all_cells()
         self.board_changed.emit()
     
     def set_board(self, board, save_original=True):
@@ -154,3 +198,52 @@ class BoardWidget(QWidget):
             if cell.get_value() == 0:
                 return False
         return True
+    
+    def enable_validation(self, enabled=True):
+        """Enable or disable real-time validation."""
+        self.validation_enabled = enabled
+        if enabled:
+            self.validate_all_cells()
+        else:
+            # Reset all cell colors
+            for cell in self.cells.values():
+                if not cell.is_given:
+                    cell.highlight_error(False)
+    
+    def validate_all_cells(self):
+        """Validate all cells and highlight errors."""
+        board = self.get_board()
+        
+        for (row, col), cell in self.cells.items():
+            if cell.is_given:
+                continue
+            
+            value = cell.get_value()
+            if value == 0:
+                cell.highlight_error(False)
+                continue
+            
+            # Check if this value violates constraints
+            has_error = self.check_cell_conflict(board, row, col, value)
+            cell.highlight_error(has_error)
+    
+    def check_cell_conflict(self, board, row, col, value):
+        """Check if placing value at (row, col) creates a conflict."""
+        # Check row (excluding the cell itself)
+        for c in range(9):
+            if c != col and board[row, c] == value:
+                return True
+        
+        # Check column (excluding the cell itself)
+        for r in range(9):
+            if r != row and board[r, col] == value:
+                return True
+        
+        # Check 3x3 box (excluding the cell itself)
+        box_row, box_col = (row // 3) * 3, (col // 3) * 3
+        for r in range(box_row, box_row + 3):
+            for c in range(box_col, box_col + 3):
+                if (r, c) != (row, col) and board[r, c] == value:
+                    return True
+        
+        return False

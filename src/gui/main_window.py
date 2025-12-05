@@ -55,6 +55,7 @@ class SudokuMainWindow(QMainWindow):
         
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+        self.board_widget.enable_validation()
     
     def setup_keyboard_shortcuts(self):
         """Setup keyboard shortcuts for navigation."""
@@ -255,8 +256,11 @@ class SudokuMainWindow(QMainWindow):
         """Handle mode changes."""
         if mode == "Player" or mode == "Custom Board":
             self.board_widget.set_editable(True)
+            # Enable validation only in Player mode
+            self.board_widget.enable_validation(mode == "Player")
         else:
             self.board_widget.set_editable(False)
+            self.board_widget.enable_validation(False)
     
     def on_difficulty_changed(self, difficulty):
         """Handle difficulty changes."""
