@@ -79,6 +79,18 @@ class SudokuMainWindow(QMainWindow):
         puzzel = self.board_widget.get_board()
         if self.controls_widget.get_mode() == "Custom Board":
             print("custom")
+            
+            # Check for constraint violations in initial board
+            if not self.is_valid_initial_board(puzzel):
+                QMessageBox.warning(self, "Invalid Board", "Board has constraint violations. Check for duplicate numbers in rows, columns, or 3x3 boxes.")
+                return
+
+            # Check if board has at least 17 values (minimum for valid Sudoku)
+            filled_count = np.count_nonzero(puzzel)
+            if filled_count < 17:
+                QMessageBox.warning(self, "Invalid Board", f"Board must have at least 17 filled cells to have a unique solution. Current: {filled_count}")
+                return
+            
             bt = Backtracking()
             # Check solvability
             test_board = puzzel.copy()
@@ -158,6 +170,30 @@ class SudokuMainWindow(QMainWindow):
         """Check if a group (row/column/box) has all digits 1-9 without repetition."""
         group = group[group != 0]  # Remove zeros
         return len(group) == 9 and len(set(group)) == 9 and all(1 <= x <= 9 for x in group)
+    
+    def is_valid_initial_board(self, board):
+        """Check if initial board state has no constraint violations."""
+        # Check rows
+        for row in range(9):
+            row_values = board[row, :][board[row, :] != 0]
+            if len(row_values) != len(set(row_values)):
+                return False
+        
+        # Check columns
+        for col in range(9):
+            col_values = board[:, col][board[:, col] != 0]
+            if len(col_values) != len(set(col_values)):
+                return False
+        
+        # Check 3x3 boxes
+        for box_row in range(0, 9, 3):
+            for box_col in range(0, 9, 3):
+                box = board[box_row:box_row+3, box_col:box_col+3].flatten()
+                box_values = box[box != 0]
+                if len(box_values) != len(set(box_values)):
+                    return False
+        
+        return True
     
     def on_mode_changed(self, mode):
         """Handle mode changes."""
