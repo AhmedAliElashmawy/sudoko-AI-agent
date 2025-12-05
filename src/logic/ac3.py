@@ -129,13 +129,17 @@ def _log_domains(csp, step, log_handle=None, final=False):
     _log_to_file(log_handle, f"Singletons: {len(singletons)}/81")
     _log_to_file(log_handle, f"Multi-domain cells: {len(multi_domain)}")
     
-    # Show some multi-domain cells (first 10)
-    if multi_domain:
-        _log_to_file(log_handle, "\nSample multi-domain cells:")
-        for var, domain in multi_domain[:10]:
-            _log_to_file(log_handle, f"  {var}: {domain}")
-        if len(multi_domain) > 10:
-            _log_to_file(log_handle, f"  ... and {len(multi_domain) - 10} more")
+    # Log ALL variable domains
+    _log_to_file(log_handle, "\n=== All Variable Domains ===")
+    for row in range(9):
+        for col in range(9):
+            var = (row, col)
+            domain = csp.domains[var]
+            if len(domain) == 1:
+                _log_to_file(log_handle, f"  {var}: [{domain[0]}] (singleton)")
+            else:
+                _log_to_file(log_handle, f"  {var}: {domain}")
+    _log_to_file(log_handle, "=== End of Domains ===")
 
 def _create_board_snapshot(csp):
     """

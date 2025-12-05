@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QGridLayout, QLineEdit
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QPalette, QColor
+from PyQt6.QtGui import QFont, QPalette, QColor, QIntValidator
 import numpy as np
 
 
@@ -13,6 +13,35 @@ class SudokuCell(QLineEdit):
         self.col = col
         self.is_given = is_given
         self.setup_ui()
+        self.setup_validator()
+    
+    def setup_validator(self):
+        """Setup input validation to only allow digits 1-9."""
+        # Using QIntValidator for digits only
+        validator = QIntValidator(0, 9, self)
+        self.setValidator(validator)
+    
+    def keyPressEvent(self, event):
+        """Override to only allow digits 1-9 or backspace/delete."""
+        key = event.key()
+        text = event.text()
+        
+        # Allow backspace, delete, and navigation keys
+        if key in (Qt.Key.Key_Backspace, Qt.Key.Key_Delete, 
+                   Qt.Key.Key_Left, Qt.Key.Key_Right, 
+                   Qt.Key.Key_Up, Qt.Key.Key_Down,
+                   Qt.Key.Key_Tab):
+            super().keyPressEvent(event)
+            return
+        
+        # Only allow digits 1-9 (reject 0 and letters)
+        if text.isdigit() and text in '123456789':
+            # Clear existing text before inserting new digit
+            self.clear()
+            super().keyPressEvent(event)
+        else:
+            # Reject the key press (including 0 and any letters)
+            event.ignore()
     
     def setup_ui(self):
         """Configure cell appearance and behavior."""
