@@ -8,6 +8,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'logic'))
 from generator import SudokuGenerator
 from solver import SudokuSolver
+from backtracking import Backtracking
 
 from board_widget import BoardWidget
 from controls import ControlsWidget
@@ -51,48 +52,59 @@ class SudokuMainWindow(QMainWindow):
     
     def generate_board(self):
         """Generate a new Sudoku puzzle."""
-        try:
-            puzzle, board_solution, success, method = self.sudoku_generator.generate(self.controls_widget.get_difficulty())
-            self.board_widget.set_board(puzzle, save_original=True)
-            
-            # Solve it to store the solution
-            if success:
-                self.success = success
-                self.solution = board_solution
-                self.method = method
-            else:
-                self.solution = None
-            
-            # Set editability based on mode
-            if self.controls_widget.get_mode() == "Player":
-                self.board_widget.set_editable(True)
-            else:
-                self.board_widget.set_editable(False)
+        # try:
+        puzzle = self.sudoku_generator.generate(self.controls_widget.get_difficulty())
+        self.board_widget.set_board(puzzle, save_original=True)
+        
+        # Solve it to store the solution
+        # if success:
+        #     self.success = success
+        #     self.solution = board_solution
+        #     self.method = method
+        # else:
+        #     self.solution = None
+        
+        # Set editability based on mode
+        if self.controls_widget.get_mode() == "Player":
+            self.board_widget.set_editable(True)
+        else:
+            self.board_widget.set_editable(False)
                 
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to generate puzzle: {str(e)}")
+        # except Exception as e:
+        #     QMessageBox.critical(self, "Error", f"Failed to generate puzzle: {str(e)}")
     
     def solve_board(self):
         """Solve the current puzzle."""
-        try:
-            if self.controls_widget.get_mode() == "Custom Board":
-                puzzel = self.board_widget.get_board()
-                self.board_widget.set_board(puzzel, save_original=True)
-                solver = SudokuSolver(puzzel)
-                self.success, self.solution, self.method = solver.solve()
-                if self.success:
-                    self.board_widget.set_board(self.solution, save_original=False)
-                    QMessageBox.information(self, "Success", f"The AI has solved the puzzle!\nMethod: {self.method}")
+        # try:
+        puzzel = self.board_widget.get_board()
+        if self.controls_widget.get_mode() == "Custom Board":
+            print("custom")
+            bt = Backtracking()
+            # Check solvability
+            test_board = puzzel.copy()
+            solvability = bt.btGenerate(test_board, False)
+            if solvability:
+                # Check uniqueness
+                test_board2 = puzzel.copy()
+                solutions = bt.countSolutions(test_board2, 2)
+                if solutions > 1:
+                    QMessageBox.information(self, "Solvability Check", "This puzzle has multiple solutions (not unique), Arc Consistency cant solve ununique puzzels.")
+                    return
                 else:
-                    QMessageBox.warning(self, "No Solution", "The AI couldn't find a solution for this puzzle.")
-            elif self.success:
-                self.board_widget.set_board(self.solution, save_original=False)
-                QMessageBox.information(self, "Success", f"The AI has solved the puzzle!\nMethod: {self.method}")
+                    QMessageBox.information(self, "Solvability Check", "This puzzle has a unique solution!")
             else:
-                QMessageBox.warning(self, "No Solution", "The AI couldn't find a solution for this puzzle.")
+                QMessageBox.warning(self, "Solvability Check", "This puzzle is not solvable.")
+                return
+        solver = SudokuSolver(puzzel)
+        self.success, self.solution, self.method = solver.solve()
+        if self.success:
+            self.board_widget.set_board(self.solution, save_original=False)
+            QMessageBox.information(self, "Success", f"The AI has solved the puzzle!\nMethod: {self.method}")
+        else:
+            QMessageBox.warning(self, "No Solution", "The AI couldn't find a solution for this puzzle.")
                 
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Failed to solve puzzle: {str(e)}")
+        # except Exception as e:
+            # QMessageBox.critical(self, "Error", f"Failed to solve puzzle: {str(e)}")
     
     def reset_board(self):
         """Reset the board to the original puzzle."""

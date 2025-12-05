@@ -1,30 +1,23 @@
 import random
 import numpy as np
+from csp import CSP
 
-
-class BacktrackingSolver:
-    """Unified backtracking solver for both solving and generating Sudoku boards."""
-    
+class Backtracking:
     def __init__(self):
         self.steps = 0
     
-    def solve(self, board, randomize=False, use_csp=None):
+    def btGenerate(self, board, randomize=False):
         """
-        Solves the given Sudoku board using backtracking.
+         Generate a Sudoku board using backtracking.
         
         Args:
             board: 9x9 numpy array or list of lists
             randomize: If True, tries numbers in random order (for generation)
-            use_csp: If provided, uses CSP-based backtracking with domains
         
         Returns:
             True if solved (simple mode), assignment dict (CSP mode), or False/None on failure
         """
-        # CSP-based backtracking (for solver after AC-3)
-        if use_csp is not None:
-            return self._backtracking_search(use_csp, randomize)
-        
-        # Simple backtracking (for generation or direct solving)
+        # backtracking for generation
         # Convert to numpy if needed
         if isinstance(board, list):
             board = np.array(board, dtype=int)
@@ -45,7 +38,7 @@ class BacktrackingSolver:
                 board[row, col] = num
                 
                 # Recur to continue solving
-                if self.solve(board, randomize):
+                if self.btGenerate(board, randomize):
                     return True
                 
                 # Backtrack
@@ -53,13 +46,34 @@ class BacktrackingSolver:
         
         return False
     
-    def _backtracking_search(self, csp, randomize=False):
+
+    def countSolutions(self, board, max_solutions=2):
+        """Count solutions up to max_solutions (default 2 for uniqueness check)."""
+        empty = self._find_empty(board)
+        if not empty:
+            return 1
+        
+        row, col = empty
+        count = 0
+        for num in range(1, 10):
+            if self._is_valid(board, row, col, num):
+                board[row, col] = num
+                
+                count += self.countSolutions(board, max_solutions)
+
+                board[row, col] = 0
+                if count >= max_solutions:
+                    return count
+        return count
+
+    def backtracking_search(self, board, randomize=False):
         """
         CSP-based backtracking search.
         Returns a complete assignment or None if failure.
         """
         # Create initial assignment from the current state of domains/board
         assignment = {}
+        csp = CSP(board)
         for var in csp.variables:
             if len(csp.domains[var]) == 1:
                 assignment[var] = csp.domains[var][0]

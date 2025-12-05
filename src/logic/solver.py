@@ -1,7 +1,7 @@
 import numpy as np
 from csp import CSP
 from ac3 import ac3
-from backtracking import BacktrackingSolver
+from backtracking import Backtracking
 
 
 class SudokuSolver:
@@ -33,6 +33,7 @@ class SudokuSolver:
         # Apply Arc Consistency
         if not ac3(csp):
             self.method_used = "AC-3 Failed"
+            print("fail")
             return False, board, self.method_used
 
         # Update grid with results from AC-3 (Singletons)
@@ -50,22 +51,3 @@ class SudokuSolver:
                 board[r, c] = val[0]
             self.method_used = "AC-3 Only"
             return True, board, self.method_used
-
-        # Run Backtracking to solve the rest
-        initial_steps = self.steps_taken
-        bt_solver = BacktrackingSolver()
-        result_assignment = bt_solver.solve(None,randomize=False, use_csp=csp)
-        
-        # Count backtracking steps (approximate)
-        empty_cells = sum(1 for var in csp.variables if len(csp.domains[var]) > 1)
-        self.steps_taken = empty_cells
-        
-        if result_assignment:
-            # Map assignment back to board array
-            for (r, c), val in result_assignment.items():
-                board[r, c] = val
-            self.method_used = f"AC-3 + Backtracking ({self.steps_taken} steps)"
-            return True, board, self.method_used
-        else:
-            self.method_used = "Backtracking Failed"
-            return False, board, self.method_used
