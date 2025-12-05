@@ -33,17 +33,14 @@ class SudokuGenerator:
         target_removal, min_steps = settings.get(difficulty, (40, 10))
         best_board = None
         
-        for _ in range(20):
-            # 1. Create Full Board
-            board = np.zeros((9, 9), dtype=int)
-            bt = Backtracking()
-            bt.btGenerate(board, randomize=True)  # Random valid board
-            
-            # 2. Remove Numbers
-            puzzle = SudokuGenerator._remove_cells(board, target_removal)
-            
-            best_board = puzzle  # Keep checking
-        # Return best effort if exact criteria not met
+        board = np.zeros((9, 9), dtype=int)
+        bt = Backtracking()
+        bt.btGenerate(board, randomize=True)  # Random valid board
+        
+        # 2. Remove Numbers
+        puzzle = SudokuGenerator._remove_cells(board, target_removal)
+        
+        best_board = puzzle  # Keep checking
         if best_board is not None:
             return best_board
         else:
