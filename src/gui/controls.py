@@ -14,6 +14,8 @@ class ControlsWidget(QWidget):
     clear_clicked = pyqtSignal()
     mode_changed = pyqtSignal(str)
     difficulty_changed = pyqtSignal(str)
+    next_step_clicked = pyqtSignal()
+    previous_step_clicked = pyqtSignal()
     
     def __init__(self):
         super().__init__()
@@ -188,6 +190,106 @@ class ControlsWidget(QWidget):
         buttons_group.setLayout(buttons_layout)
         main_layout.addWidget(buttons_group)
         
+        # Step navigation group (for AC3 visualization)
+        self.step_group = QGroupBox()
+        step_layout = QVBoxLayout()
+        
+        step_label = QLabel("AC3 Step Navigation:")
+        step_label.setFont(QFont("Arial", 12))
+        step_layout.addWidget(step_label)
+        
+        self.step_info_label = QLabel("No steps available")
+        self.step_info_label.setFont(QFont("Arial", 10))
+        self.step_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        step_layout.addWidget(self.step_info_label)
+        
+        # Navigation buttons in horizontal layout
+        nav_layout = QHBoxLayout()
+        
+        self.prev_step_btn = QPushButton("◀ Previous")
+        self.prev_step_btn.setFont(QFont("Arial", 10))
+        self.prev_step_btn.setMinimumHeight(35)
+        self.prev_step_btn.setEnabled(False)
+        self.prev_step_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #607D8B;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 8px;
+            }
+            QPushButton:hover:enabled {
+                background-color: #546E7A;
+            }
+            QPushButton:pressed {
+                background-color: #455A64;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        self.prev_step_btn.clicked.connect(self.previous_step_clicked.emit)
+        nav_layout.addWidget(self.prev_step_btn)
+        
+        self.next_step_btn = QPushButton("Next ▶")
+        self.next_step_btn.setFont(QFont("Arial", 10))
+        self.next_step_btn.setMinimumHeight(35)
+        self.next_step_btn.setEnabled(False)
+        self.next_step_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #607D8B;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                padding: 8px;
+            }
+            QPushButton:hover:enabled {
+                background-color: #546E7A;
+            }
+            QPushButton:pressed {
+                background-color: #455A64;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #666666;
+            }
+        """)
+        self.next_step_btn.clicked.connect(self.next_step_clicked.emit)
+        nav_layout.addWidget(self.next_step_btn)
+        
+        step_layout.addLayout(nav_layout)
+        self.step_group.setLayout(step_layout)
+        self.step_group.setVisible(False)  # Hidden by default
+        main_layout.addWidget(self.step_group)
+        
+        # Solve statistics group
+        self.stats_group = QGroupBox()
+        stats_layout = QVBoxLayout()
+        
+        stats_label = QLabel("Solve Statistics:")
+        stats_label.setFont(QFont("Arial", 12))
+        stats_layout.addWidget(stats_label)
+        
+        self.time_label = QLabel("Time: N/A")
+        self.time_label.setFont(QFont("Arial", 10))
+        self.time_label.setStyleSheet("color: #2196F3; font-weight: bold;")
+        stats_layout.addWidget(self.time_label)
+        
+        self.method_label = QLabel("Method: N/A")
+        self.method_label.setFont(QFont("Arial", 10))
+        self.method_label.setStyleSheet("color: #4CAF50; font-weight: bold;")
+        stats_layout.addWidget(self.method_label)
+        
+        self.steps_label = QLabel("Steps: N/A")
+        self.steps_label.setFont(QFont("Arial", 10))
+        self.steps_label.setStyleSheet("color: #FF9800; font-weight: bold;")
+        stats_layout.addWidget(self.steps_label)
+        
+        self.stats_group.setLayout(stats_layout)
+        self.stats_group.setVisible(False)  # Hidden by default
+        main_layout.addWidget(self.stats_group)
+        
         main_layout.addStretch()
         self.setLayout(main_layout)
     
@@ -218,4 +320,30 @@ class ControlsWidget(QWidget):
     
     def get_difficulty(self):
         """Return the current difficulty level."""
+    
+    def update_step_info(self, current_step, total_steps):
+        """Update the step information label."""
+        if total_steps > 0:
+            self.step_info_label.setText(f"Step {current_step + 1} / {total_steps}")
+            self.step_group.setVisible(True)
+            self.prev_step_btn.setEnabled(current_step > 0)
+            self.next_step_btn.setEnabled(current_step < total_steps - 1)
+        else:
+            self.step_info_label.setText("No steps available")
+            self.step_group.setVisible(False)
+    
+    def hide_step_navigation(self):
+        """Hide the step navigation group."""
+        self.step_group.setVisible(False)
+    
+    def update_statistics(self, solve_time, method, num_steps):
+        """Update the solve statistics display."""
+        self.time_label.setText(f"Time: {solve_time:.4f} seconds")
+        self.method_label.setText(f"Method: {method}")
+        self.steps_label.setText(f"Steps: {num_steps}")
+        self.stats_group.setVisible(True)
+    
+    def hide_statistics(self):
+        """Hide the statistics group."""
+        self.stats_group.setVisible(False)
         return self.difficulty_combo.currentText()

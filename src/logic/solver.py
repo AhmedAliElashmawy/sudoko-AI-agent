@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from csp import CSP
 from ac3 import ac3
 from backtracking import Backtracking
@@ -9,11 +10,18 @@ class SudokuSolver:
         self.board = board
         self.steps_taken = 0
         self.method_used = ""
+        self.board_states = []  # Store board states from AC3
+        self.solve_time = 0.0  # Time taken to solve in seconds
 
-    def solve(self, board=None):
+    def solve(self, board=None, log_steps=False, log_file=None):
         """
         Solves the given Sudoku board (numpy array).
         Returns: (success, solved_board, method_description)
+        
+        Args:
+            board: Sudoku puzzle as numpy array
+            log_steps: If True, logs AC-3 execution details to file
+            log_file: Path to log file (default: auto-generated timestamp)
         """
         if board is None:
             board = self.board
@@ -28,10 +36,17 @@ class SudokuSolver:
             board = board.copy()
         
         self.steps_taken = 0
+        self.board_states = []  # Reset board states
+        
+        # Start timing
+        start_time = time.time()
+        
         csp = CSP(board)
 
         # Apply Arc Consistency
-        if not ac3(csp):
+        ac3_success, self.board_states = ac3(csp, log_steps=log_steps, log_file=log_file)
+        if not ac3_success:
+            self.solve_time = time.time() - start_time
             self.method_used = "AC-3 Failed"
             print("fail")
             return False, board, self.method_used
@@ -49,5 +64,13 @@ class SudokuSolver:
         if all(len(csp.domains[var]) == 1 for var in csp.variables):
             for (r, c), val in csp.domains.items():
                 board[r, c] = val[0]
+            self.solve_time = time.time() - start_time
             self.method_used = "AC-3 Only"
             return True, board, self.method_used
+    
+    def get_board_states(self):
+        """
+        Returns the list of board states captured during AC-3 execution.
+        Each state represents the board at a point when a domain became singleton.
+        """
+        return self.board_states

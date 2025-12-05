@@ -2,6 +2,7 @@ import sys
 import os
 from PyQt6.QtWidgets import QMainWindow, QWidget, QHBoxLayout, QMessageBox
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QShortcut, QKeySequence
 import numpy as np
 
 
@@ -23,7 +24,10 @@ class SudokuMainWindow(QMainWindow):
         self.solution = None
         self.success = False
         self.method = ""
+        self.board_states = []  # Store board states from AC-3
+        self.current_step = 0  # Current step index for navigation
         self.setup_ui()
+        self.setup_keyboard_shortcuts()
         self.setWindowTitle("Sudoku Game - AI & Player Mode")
         self.resize(900, 650)
     
@@ -45,16 +49,40 @@ class SudokuMainWindow(QMainWindow):
         self.controls_widget.clear_clicked.connect(self.clear_board)
         self.controls_widget.mode_changed.connect(self.on_mode_changed)
         self.controls_widget.difficulty_changed.connect(self.on_difficulty_changed)
+        self.controls_widget.next_step_clicked.connect(self.next_step)
+        self.controls_widget.previous_step_clicked.connect(self.previous_step)
         main_layout.addWidget(self.controls_widget, stretch=1)
         
         central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
+    
+    def setup_keyboard_shortcuts(self):
+        """Setup keyboard shortcuts for navigation."""
+        # Left arrow or 'A' for previous step
+        self.shortcut_prev = QShortcut(QKeySequence(Qt.Key.Key_Left), self)
+        self.shortcut_prev.activated.connect(self.previous_step)
+        
+        self.shortcut_prev_a = QShortcut(QKeySequence('A'), self)
+        self.shortcut_prev_a.activated.connect(self.previous_step)
+        
+        # Right arrow or 'D' for next step
+        self.shortcut_next = QShortcut(QKeySequence(Qt.Key.Key_Right), self)
+        self.shortcut_next.activated.connect(self.next_step)
+        
+        self.shortcut_next_d = QShortcut(QKeySequence('D'), self)
+        self.shortcut_next_d.activated.connect(self.next_step)
     
     def generate_board(self):
         """Generate a new Sudoku puzzle."""
         # try:
         puzzle = self.sudoku_generator.generate(self.controls_widget.get_difficulty())
         self.board_widget.set_board(puzzle, save_original=True)
+        
+        # Clear board states and hide step navigation
+        self.board_states = []
+        self.current_step = 0
+        self.controls_widget.hide_step_navigation()
+        self.controls_widget.hide_statistics()
         
         # Solve it to store the solution
         # if success:
@@ -108,10 +136,28 @@ class SudokuMainWindow(QMainWindow):
                 QMessageBox.warning(self, "Solvability Check", "This puzzle is not solvable.")
                 return
         solver = SudokuSolver(puzzel)
-        self.success, self.solution, self.method = solver.solve()
+        self.success, self.solution, self.method = solver.solve(log_steps=True, log_file="ac3_solve_log.txt")
+        
+        # Store board states from AC-3 for GUI display
+        self.board_states = solver.get_board_states()
+        self.current_step = 0
+        print(f"\n>>> Captured {len(self.board_states)} board states for GUI display")
+        print(f">>> Solve time: {solver.solve_time:.4f} seconds")
+        
         if self.success:
-            self.board_widget.set_board(self.solution, save_original=False)
-            QMessageBox.information(self, "Success", f"The AI has solved the puzzle!\nMethod: {self.method}")
+            # Show the first step (initial state)
+            if len(self.board_states) > 0:
+                self.board_widget.set_board(self.board_states[0], save_original=False)
+                self.controls_widget.update_step_info(0, len(self.board_states))
+            else:
+                self.board_widget.set_board(self.solution, save_original=False)
+            
+            # Update statistics display
+            self.controls_widget.update_statistics(
+                solver.solve_time,
+                self.method,
+                len(self.board_states)
+            )
         else:
             QMessageBox.warning(self, "No Solution", "The AI couldn't find a solution for this puzzle.")
                 
@@ -121,9 +167,19 @@ class SudokuMainWindow(QMainWindow):
     def reset_board(self):
         """Reset the board to the original puzzle."""
         self.board_widget.reset_to_original()
+        # Reset to first step if states are available
+        if self.board_states:
+            self.current_step = 0
+            self.board_widget.set_board(self.board_states[0], save_original=False)
+            self.controls_widget.update_step_info(0, len(self.board_states))
 
     def clear_board(self):
         self.board_widget.clear_board()
+        # Clear board states and hide step navigation
+        self.board_states = []
+        self.current_step = 0
+        self.controls_widget.hide_step_navigation()
+        self.controls_widget.hide_statistics()
     
     def check_solution(self):
         """Check if the player's solution is correct."""
@@ -205,3 +261,24 @@ class SudokuMainWindow(QMainWindow):
     def on_difficulty_changed(self, difficulty):
         """Handle difficulty changes."""
         self.current_difficulty = difficulty
+    
+    def get_board_states(self):
+        """
+        Returns the list of board states captured during AC-3 execution.
+        Can be used to visualize the solving process step by step.
+        """
+        return self.board_states
+    
+    def next_step(self):
+        """Navigate to the next AC-3 step."""
+        if self.board_states and self.current_step < len(self.board_states) - 1:
+            self.current_step += 1
+            self.board_widget.set_board(self.board_states[self.current_step], save_original=False)
+            self.controls_widget.update_step_info(self.current_step, len(self.board_states))
+    
+    def previous_step(self):
+        """Navigate to the previous AC-3 step."""
+        if self.board_states and self.current_step > 0:
+            self.current_step -= 1
+            self.board_widget.set_board(self.board_states[self.current_step], save_original=False)
+            self.controls_widget.update_step_info(self.current_step, len(self.board_states))
