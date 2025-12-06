@@ -320,6 +320,7 @@ class ControlsWidget(QWidget):
     
     def get_difficulty(self):
         """Return the current difficulty level."""
+        return self.difficulty_combo.currentText()
     
     def update_step_info(self, current_step, total_steps):
         """Update the step information label."""

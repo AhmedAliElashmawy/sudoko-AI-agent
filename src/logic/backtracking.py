@@ -65,50 +65,6 @@ class Backtracking:
                 if count >= max_solutions:
                     return count
         return count
-
-    def backtracking_search(self, board, randomize=False):
-        """
-        CSP-based backtracking search.
-        Returns a complete assignment or None if failure.
-        """
-        # Create initial assignment from the current state of domains/board
-        assignment = {}
-        csp = CSP(board)
-        for var in csp.variables:
-            if len(csp.domains[var]) == 1:
-                assignment[var] = csp.domains[var][0]
-                
-        return self._backtrack_csp(assignment, csp, randomize)
-    
-    def _backtrack_csp(self, assignment, csp, randomize):
-        """Recursive backtracking function for CSP."""
-        if len(assignment) == len(csp.variables):
-            return assignment  # Solution found
-
-        var = self._select_unassigned_variable(assignment, csp)
-        
-        # Order domain values
-        domain_values = list(csp.domains[var])
-        if randomize:
-            random.shuffle(domain_values)
-        
-        for value in domain_values:
-            if csp.is_consistent(var, value, assignment):
-                assignment[var] = value
-                self.steps += 1
-                result = self._backtrack_csp(assignment, csp, randomize)
-                if result:
-                    return result
-                del assignment[var]
-                
-        return None
-    
-    def _select_unassigned_variable(self, assignment, csp):
-        """Selects the next variable to assign (Simple: first empty found)."""
-        for var in csp.variables:
-            if var not in assignment:
-                return var
-        return None
     
     def _find_empty(self, board):
         """Finds the first empty cell (0) in the board."""

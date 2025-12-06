@@ -76,6 +76,7 @@ class SudokuMainWindow(QMainWindow):
     def generate_board(self):
         """Generate a new Sudoku puzzle."""
         # try:
+        print(self.controls_widget.get_difficulty())
         puzzle = self.sudoku_generator.generate(self.controls_widget.get_difficulty())
         self.board_widget.set_board(puzzle, save_original=True)
         
